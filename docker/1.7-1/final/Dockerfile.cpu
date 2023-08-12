@@ -4,6 +4,7 @@ ARG PYTHON_VERSION=3.8
 FROM xgboost-container-base:${SAGEMAKER_XGBOOST_VERSION}-cpu-py3
 
 ARG SAGEMAKER_XGBOOST_VERSION
+ARG PYTHON_VERSION
 
 WORKDIR /sagemaker-xgboost-container
 
@@ -19,25 +20,26 @@ RUN python setup.py bdist_wheel --universal
 RUN python3 -m pip install -r ./requirements.txt && rm ./requirements.txt
 
 # Install smdebug from source
-RUN python3 -m pip install git+https://github.com/awslabs/sagemaker-debugger.git@1.0.29
+RUN cd /tmp && \
+    python3 -m pip install git+https://github.com/awslabs/sagemaker-debugger.git@1.0.29
 
 
 ###########################
 # Copy wheel to container #
 ###########################
-RUN rm -rf /miniconda3/lib/python3.8/site-packages/numpy-1.21.2.dist-info && \
-    python3 -m pip install --no-cache ./dist/sagemaker_xgboost_container-1.0-py2.py3-none-any.whl && \
-    python3 -m pip uninstall -y typing && \
+RUN rm -rf /miniconda3/lib/python3.8/site-packages/numpy-*.dist-info && \
+    python3 -m pip install --no-cache ./dist/sagemaker_xgboost_container-2.0-py2.py3-none-any.whl && \
+    python3 -m pip uninstall -y typing
 
 ##############
 # DMLC PATCH #
 ##############
 # TODO: remove after making contributions back to xgboost for tracker.py
 RUN cp ./src/sagemaker_xgboost_container/dmlc_patch/tracker.py \
-   /miniconda3/lib/python${PYTHON_VERSION}/site-packages/xgboost/dmlc-core/tracker/dmlc_tracker/tracker.py
+   /miniconda3/lib/python${PYTHON_VERSION}/site-packages/xgboost/tracker.py
 
 # Include DMLC python code in PYTHONPATH to use RabitTracker
-ENV PYTHONPATH=$PYTHONPATH:/miniconda3/lib/python${PYTHON_VERSION}/site-packages/xgboost/dmlc-core/tracker
+ENV PYTHONPATH=$PYTHONPATH:/miniconda3/lib/python${PYTHON_VERSION}/site-packages/xgboost
 
 #######
 # MMS #
